@@ -1,9 +1,14 @@
 package com.abc;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+import org.junit.Test;
 
 public class BankTest {
 	private static final double DOUBLE_DELTA = 1e-15;
@@ -47,7 +52,7 @@ public class BankTest {
 			fail();
 		} catch (Exception e) {
 			assertEquals(e.getMessage(),
-					"java.lang.IllegalArgumentException: amount must be greater than zero");
+					"java.lang.IllegalArgumentException: deposit amount must be greater than zero");
 		}
 	}
 
@@ -64,7 +69,7 @@ public class BankTest {
 			fail();
 		} catch (Exception e) {
 			assertEquals(e.getMessage(),
-					"java.lang.IllegalArgumentException: amount must be greater than zero");
+					"java.lang.IllegalArgumentException: withdrawal amount must be greater than zero");
 		}
 	}
 
@@ -91,7 +96,7 @@ public class BankTest {
 			fail();
 		} catch (Exception e) {
 			assertEquals(e.getMessage(),
-					"java.lang.IllegalArgumentException: amount must be greater than zero");
+					"java.lang.IllegalArgumentException: deposit amount must be greater than zero");
 		}
 	}
 
@@ -105,7 +110,7 @@ public class BankTest {
 			fail();
 		} catch (Exception e) {
 			assertEquals(e.getMessage(),
-					"java.lang.IllegalArgumentException: amount must be greater than zero");
+					"java.lang.IllegalArgumentException: withdrawal amount must be greater than zero");
 		}
 	}
 
@@ -119,7 +124,10 @@ public class BankTest {
 		} catch (Exception e) {
 			fail();
 		}
-		assertEquals(170.0, bank.totalInterestPaid(), DOUBLE_DELTA);
+		//assertEquals(170.0, bank.totalInterestPaid(), DOUBLE_DELTA);
+		//System.out.println("Bank interest paid: " + bank.totalInterestPaid());
+		
+		assertEquals(150.0, bank.totalInterestPaid(), DOUBLE_DELTA);
 	}
 	
 	@Test
@@ -131,7 +139,7 @@ public class BankTest {
 			checkingAccount.deposit(-3000.0);
 			fail();
 		} catch (Exception e) {
-			assertEquals(e.getMessage(),"java.lang.IllegalArgumentException: amount must be greater than zero");
+			assertEquals(e.getMessage(),"java.lang.IllegalArgumentException: deposit amount must be greater than zero");
 		}
 	}
 	
@@ -144,7 +152,98 @@ public class BankTest {
 			checkingAccount.withdraw(-3000.0);
 			fail();
 		} catch (Exception e) {
-			assertEquals(e.getMessage(),"java.lang.IllegalArgumentException: amount must be greater than zero");
+			assertEquals(e.getMessage(),"java.lang.IllegalArgumentException: withdrawal amount must be greater than zero");
 		}
+	}
+	
+	
+	@Test
+	public void TransferBetweenAccounts() {
+	
+		IAccount savingsAccount = new SavingsAccount();
+		IAccount checkingAccount = new CheckingAccount();
+		
+		Customer customer = new Customer("Bill");
+		customer.openAccount(savingsAccount);
+		customer.openAccount(checkingAccount);
+				 
+		assertEquals(2, customer.getNumberOfAccounts(), DOUBLE_DELTA);
+	
+		try {
+			savingsAccount.deposit(1000.0);
+			checkingAccount.deposit(2000.0);
+			
+			assertTrue("Before transfer, the savings account balance should be 1000.0",savingsAccount.sumTransactions() == 1000.0);
+			assertTrue("Before transfer, the checking account balance should be 2000.0",checkingAccount.sumTransactions() == 2000.0);
+			
+			checkingAccount.transfer(500.0, savingsAccount);
+			
+			assertFalse(savingsAccount.sumTransactions() == 1000.0);
+			assertFalse(checkingAccount.sumTransactions() == 2000.0);
+			
+			assertTrue("After transfer, the new savings account balance should be 1500.0",savingsAccount.sumTransactions() == 1500.0);
+			assertTrue("After transfer, the new checking account balance should be 1500.0",checkingAccount.sumTransactions() == 1500.0);			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail();
+		}		
+	}
+	
+	
+	@Test
+	public void maxi_savings_account_without_withdrawal_within_10days() {		
+		
+		Bank bank = new Bank();
+		IAccount maxiSavingsAccount = new MaxiSavingsAccount();
+		bank.addCustomer(new Customer("Bill").openAccount(maxiSavingsAccount));
+		try {
+		    Transaction transaction1 = new Transaction(1000, DateProvider.getInstance().pastDays(20));	
+		    Transaction transaction2 = new Transaction(2000, DateProvider.getInstance().pastDays(10));		  
+		    Transaction transaction3 = new Transaction(-2000, DateProvider.getInstance().pastDays(11)); // withdrawal outside 10 days
+		    Transaction transaction4 = new Transaction(2000, DateProvider.getInstance().pastDays(3));
+		    
+		    maxiSavingsAccount.getTransactions().add(transaction1);
+		    maxiSavingsAccount.getTransactions().add(transaction2);
+		    maxiSavingsAccount.getTransactions().add(transaction3);
+		    maxiSavingsAccount.getTransactions().add(transaction4);		    
+		    assertFalse(maxiSavingsAccount.hasWithdrawal(10));
+		    assertTrue(maxiSavingsAccount.hasWithdrawal(11));
+		    assertTrue(maxiSavingsAccount.hasWithdrawal(30));
+		   
+		    
+		} catch (Exception e) {
+			fail();
+		}
+		// 3000 * 0.05 = 150.0
+		assertEquals(150.0, bank.totalInterestPaid(), DOUBLE_DELTA);
+	}
+	
+	
+	@Test
+	public void maxi_savings_account_withdrawal_within_10days() {		
+		
+		Bank bank = new Bank();
+		IAccount maxiSavingsAccount = new MaxiSavingsAccount();
+		bank.addCustomer(new Customer("Bill").openAccount(maxiSavingsAccount));
+		try {
+			
+		    Transaction transaction1 = new Transaction(1000, DateProvider.getInstance().pastDays(20));  
+		    Transaction transaction2 = new Transaction(2000, DateProvider.getInstance().pastDays(10));  
+		    Transaction transaction3 = new Transaction(2000, DateProvider.getInstance().pastDays(5));
+		    Transaction transaction4 = new Transaction(-2000, DateProvider.getInstance().pastDays(10)); // withdrawal within past 10 days
+		    
+		    maxiSavingsAccount.getTransactions().add(transaction1);
+		    maxiSavingsAccount.getTransactions().add(transaction2);
+		    maxiSavingsAccount.getTransactions().add(transaction3);
+		    maxiSavingsAccount.getTransactions().add(transaction4);
+		    
+		    assertTrue(maxiSavingsAccount.hasWithdrawal(10));		     		   
+		    
+		} catch (Exception e) {
+			fail();
+		}
+		// 3000 * 0.01 = 50.0
+		assertEquals(30.0, bank.totalInterestPaid(), DOUBLE_DELTA);
 	}
 }

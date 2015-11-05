@@ -17,8 +17,13 @@ public interface IAccount {
 	void withdraw(double amount) throws ExecutionException,
 			InterruptedException;
 
+	void transfer(double amount, IAccount toAccount) throws ExecutionException,
+	InterruptedException;
+	
 	double interestEarned();
 
+	boolean hasWithdrawal(int pastDays);
+	
 	double sumTransactions();
 
 	int getAccountType();

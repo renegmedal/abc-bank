@@ -10,11 +10,15 @@ public class MaxiSavingsAccount extends AbstractAccount {
 		return IAccount.MAXI_SAVINGS_TYPE_NAME;
 	}
 	public double interestEarned() {		
-		final double amount = sumTransactions();
-		if (amount <= 1000)
-			return amount * 0.02;
-		if (amount <= 2000)
-			return 20 + (amount - 1000) * 0.05;
-		return 70 + (amount - 2000) * 0.1;
+	    final double amount = sumTransactions();
+//		if (amount <= 1000)
+//			return amount * 0.02;
+//		if (amount <= 2000)
+//			return 20 + (amount - 1000) * 0.05;
+//		return 70 + (amount - 2000) * 0.1;
+		if (hasWithdrawal(10)) 
+			return amount * 0.01;
+		else
+			return amount * 0.05;
 	}
 }

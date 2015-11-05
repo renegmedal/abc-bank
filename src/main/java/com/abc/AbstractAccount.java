@@ -1,6 +1,8 @@
 package com.abc;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -22,7 +24,7 @@ public abstract class AbstractAccount implements IAccount {
 
 	public int getAccountType() {
 		return accountType;
-	}	
+	}
 
 	public List<Transaction> getTransactions() {
 		return transactions;
@@ -34,7 +36,8 @@ public abstract class AbstractAccount implements IAccount {
 		Future<IAccount> future = executor.submit(new Callable<IAccount>() {
 
 			public IAccount call() throws Exception {
-				IBankTransaction dt = BankTransactionFactory.create(TransactionType.DEPOSIT);
+				IBankTransaction dt = BankTransactionFactory
+						.create(TransactionType.DEPOSIT);
 				return dt.execute(amount, AbstractAccount.this);
 			}
 		});
@@ -49,8 +52,24 @@ public abstract class AbstractAccount implements IAccount {
 		Future<IAccount> future = executor.submit(new Callable<IAccount>() {
 
 			public IAccount call() throws Exception {
-				IBankTransaction wt = BankTransactionFactory.create(TransactionType.WITHDRAW);
+				IBankTransaction wt = BankTransactionFactory
+						.create(TransactionType.WITHDRAW);
 				return wt.execute(amount, AbstractAccount.this);
+			}
+		});
+
+		future.get();
+
+	}
+
+	public void transfer(final double amount, final IAccount toAccount) throws ExecutionException,
+			InterruptedException {
+
+		Future<IAccount> future = executor.submit(new Callable<IAccount>() {
+
+			public IAccount call() throws Exception {
+				TransferTransaction transfer = new TransferTransaction(); 
+				return transfer.execute(amount, AbstractAccount.this, toAccount);				 
 			}
 		});
 
@@ -69,4 +88,22 @@ public abstract class AbstractAccount implements IAccount {
 		return amount;
 	}
 
+	/**
+	 * Determine if there is a withdrawal transaction for a given past to this account
+	 * TODO: This is not an efficient way. Need to be changed
+	 * 
+	 * @param days Number of days passed since the current day
+	 * @return true True if withdrawals were made for a given past days 
+	 */
+	public boolean hasWithdrawal(int numOfDays) {		
+		Calendar pastDate = DateProvider.getInstance().pastCalendarDays(numOfDays+1);		
+		Calendar tDate = null;
+		for (Transaction t : transactions) {			 
+			tDate = Calendar.getInstance();
+			tDate.setTime(t.getTransactionDate());
+			if (tDate.after(pastDate) && t.getAmount() < 0) return true;
+		}		
+		return false;
+		 
+	}
 }

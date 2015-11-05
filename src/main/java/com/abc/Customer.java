@@ -6,8 +6,8 @@ import java.util.List;
 import static java.lang.Math.abs;
 
 public class Customer {
-    private String name;
-    private List<IAccount> accounts;
+    private final String name;
+    private final List<IAccount> accounts;
 
     public Customer(String name) {
         this.name = name;
@@ -62,5 +62,6 @@ public class Customer {
 
     private String toDollars(double d){
         return String.format("$%,.2f", abs(d));
-    }
+    }        
+
 }
